@@ -2,7 +2,10 @@ use diesel::prelude::*;
 
 use crate::models;
 
-pub fn add_product(new_product: models::NewProduct, connection: &PgConnection) -> Result<models::Product, diesel::result::Error> {
+pub fn add_product(
+    new_product: models::NewProduct,
+    connection: &PgConnection,
+) -> Result<models::Product, diesel::result::Error> {
     use crate::schema::products::dsl::*;
     let product: models::Product = diesel::insert_into(products)
         .values(&new_product)
@@ -10,7 +13,10 @@ pub fn add_product(new_product: models::NewProduct, connection: &PgConnection) -
     Ok(product)
 }
 
-pub fn get_product(product_id: i32, connection: &PgConnection) -> Result<Option<models::Product>, diesel::result::Error> {
+pub fn get_product(
+    product_id: i32,
+    connection: &PgConnection,
+) -> Result<Option<models::Product>, diesel::result::Error> {
     use crate::schema::products::dsl::*;
     let product = products
         .filter(id.eq(product_id))
@@ -19,7 +25,11 @@ pub fn get_product(product_id: i32, connection: &PgConnection) -> Result<Option<
     Ok(product)
 }
 
-pub fn update_product(product_id: i32, new_product: models::NewProduct, connection: &PgConnection) -> Result<models::Product, diesel::result::Error> {
+pub fn update_product(
+    product_id: i32,
+    new_product: models::NewProduct,
+    connection: &PgConnection,
+) -> Result<models::Product, diesel::result::Error> {
     use crate::schema::products::dsl::*;
 
     let product = models::Product {
@@ -39,15 +49,24 @@ pub fn update_product(product_id: i32, new_product: models::NewProduct, connecti
     Ok(result)
 }
 
-pub fn remove_product(product_id: i32, connection: &PgConnection) -> Result<usize, diesel::result::Error> {
+pub fn remove_product(
+    product_id: i32,
+    connection: &PgConnection,
+) -> Result<usize, diesel::result::Error> {
     use crate::schema::products::dsl::*;
 
-    let result = diesel::delete(products).filter(id.eq(product_id)).execute(connection)?;
+    let result = diesel::delete(products)
+        .filter(id.eq(product_id))
+        .execute(connection)?;
 
     Ok(result)
 }
 
-pub fn list_products(limit: Option<i64>, offset: Option<i64>, connection: &PgConnection) -> Result<Vec<models::Product>, diesel::result::Error> {
+pub fn list_products(
+    limit: Option<i64>,
+    offset: Option<i64>,
+    connection: &PgConnection,
+) -> Result<Vec<models::Product>, diesel::result::Error> {
     use crate::schema::products::dsl::*;
     let result = products
         .order(id)

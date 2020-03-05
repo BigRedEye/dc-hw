@@ -11,7 +11,7 @@ pub struct Product {
 }
 
 #[derive(Serialize, Deserialize, Insertable)]
-#[table_name="products"]
+#[table_name = "products"]
 pub struct NewProduct {
     pub name: String,
     pub code: String,
@@ -28,4 +28,3 @@ pub struct ListQuery {
     pub limit: Option<i64>,
     pub offset: Option<i64>,
 }
-
