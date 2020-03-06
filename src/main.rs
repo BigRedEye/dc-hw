@@ -1,55 +1,33 @@
 #[macro_use]
 extern crate diesel;
+#[macro_use]
+extern crate diesel_migrations;
 
 use actix_web::{delete, get, middleware, post, put, web, App, Error, HttpResponse, HttpServer};
-use diesel::prelude::*;
-use diesel::r2d2::{self, ConnectionManager};
-use log::{error, info};
+use log::info;
 
 mod models;
 mod schema;
 mod store;
 
-type DbPool = r2d2::Pool<ConnectionManager<PgConnection>>;
-
-fn handle_server_error<E>(e: E) -> HttpResponse
-where
-    E: std::fmt::Display,
-{
-    HttpResponse::InternalServerError().json(models::ApiError {
-        error: format!("Internal server error: {}", e),
-    })
-}
-
 #[post("/v1/product")]
 async fn add_product(
-    pool: web::Data<DbPool>,
+    store: web::Data<store::Store>,
     data: web::Json<models::NewProduct>,
 ) -> Result<HttpResponse, Error> {
-    let connection = pool.get().expect("Failed to get db connection");
-
-    let product = web::block(move || store::add_product(data.0, &connection))
-        .await
-        .map_err(|e| {
-            error!("Failed to get product: {}", e);
-            handle_server_error(e)
-        })?;
+    let product = web::block(move || store.add_product(data.0)).await?;
 
     Ok(HttpResponse::Created().json(product))
 }
 
 #[get("/v1/product/{id}")]
-async fn get_product(pool: web::Data<DbPool>, id: web::Path<i32>) -> Result<HttpResponse, Error> {
-    let connection = pool.get().expect("Failed to get db connection");
-
+async fn get_product(
+    store: web::Data<store::Store>,
+    id: web::Path<i32>,
+) -> Result<HttpResponse, Error> {
     let product_id = *id;
 
-    let product = web::block(move || store::get_product(product_id, &connection))
-        .await
-        .map_err(|e| {
-            error!("Failed to get product: {}", e);
-            handle_server_error(e)
-        })?;
+    let product = web::block(move || store.get_product(product_id)).await?;
 
     match product {
         Some(result) => Ok(HttpResponse::Ok().json(result)),
@@ -61,80 +39,53 @@ async fn get_product(pool: web::Data<DbPool>, id: web::Path<i32>) -> Result<Http
 
 #[put("/v1/product/{id}")]
 async fn update_product(
-    pool: web::Data<DbPool>,
+    store: web::Data<store::Store>,
     id: web::Path<i32>,
     data: web::Json<models::NewProduct>,
 ) -> Result<HttpResponse, Error> {
-    let connection = pool.get().expect("Failed to get db connection");
-
-    let product = web::block(move || store::update_product(*id, data.0, &connection))
-        .await
-        .map_err(|e| {
-            error!("Failed to get product: {}", e);
-            handle_server_error(e)
-        })?;
+    let product = web::block(move || store.update_product(*id, data.0)).await?;
 
     Ok(HttpResponse::Ok().json(product))
 }
 
 #[delete("/v1/product/{id}")]
 async fn remove_product(
-    pool: web::Data<DbPool>,
+    store: web::Data<store::Store>,
     id: web::Path<i32>,
 ) -> Result<HttpResponse, Error> {
-    let connection = pool.get().expect("Failed to get db connection");
     let product_id = *id;
-
-    let num_removed = web::block(move || store::remove_product(product_id, &connection))
-        .await
-        .map_err(|e| {
-            error!("Failed to remove product: {}", e);
-            handle_server_error(e)
-        })?;
-
+    let num_removed = web::block(move || store.remove_product(product_id)).await?;
     match num_removed {
         0 => Ok(HttpResponse::NotFound().json(models::ApiError {
             error: format!("Cannot find product with id {}", product_id),
         })),
-        _ => Ok(HttpResponse::Ok().finish()),
+        n => Ok(HttpResponse::Ok().json(models::ApiSuccess {
+            status: format!("Removed {} products", n),
+        })),
     }
 }
 
 #[get("/v1/products")]
 async fn list_products(
-    pool: web::Data<DbPool>,
+    store: web::Data<store::Store>,
     web::Query(query): web::Query<models::ListQuery>,
 ) -> Result<HttpResponse, Error> {
-    let connection = pool.get().expect("Failed to get db connection");
-
-    let products = web::block(move || store::list_products(query.limit, query.offset, &connection))
-        .await
-        .map_err(|e| {
-            error!("Failed to list products: {}", e);
-            handle_server_error(e)
-        })?;
-
+    let products = web::block(move || store.list_products(query)).await?;
     Ok(HttpResponse::Ok().json(products))
 }
 
 #[actix_rt::main]
 async fn main() -> std::io::Result<()> {
-    std::env::set_var("RUST_LOG", "actix_web=info,diesel=debug");
     env_logger::init();
-    dotenv::dotenv().ok();
 
-    let connspec = std::env::var("DATABASE_URL").expect("DATABASE_URL");
-    let manager = ConnectionManager::<PgConnection>::new(connspec);
-    let pool = r2d2::Pool::builder()
-        .build(manager)
-        .expect("Failed to create pool");
+    info!("Hello, world!");
+    let address = std::env::var("BIND_ADDRESS").unwrap_or_else(|_| String::from("0.0.0.0:8080"));
+    let store = store::Store::new();
 
-    let address = "0.0.0.0:8080";
     info!("Starting server at {}", &address);
-
     HttpServer::new(move || {
         App::new()
-            .data(pool.clone())
+            .data(store.clone())
             .wrap(middleware::Logger::default())
             .service(add_product)
             .service(get_product)
