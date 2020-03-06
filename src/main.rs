@@ -78,7 +78,6 @@ async fn list_products(
 async fn main() -> std::io::Result<()> {
     env_logger::init();
 
-    info!("Hello, world!");
     let address = std::env::var("BIND_ADDRESS").unwrap_or_else(|_| String::from("0.0.0.0:8080"));
     let store = store::Store::new();
 
