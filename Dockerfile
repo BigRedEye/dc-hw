@@ -1,5 +1,4 @@
 FROM rust:1.41.1-stretch AS build
-RUN apt-get update && apt-get -y install ca-certificates cmake musl-tools libssl-dev && rm -rf /var/lib/apt/lists/*
 COPY . .
 RUN cargo build --release
 
