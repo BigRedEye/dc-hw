@@ -1,0 +1,17 @@
+[package]
+name = "amqp-consumer"
+version = "0.1.0"
+authors = ["BigRedEye <mail@bigredeye.me>"]
+edition = "2018"
+
+# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
+
+[dependencies]
+errors = { path = "../errors" }
+log = "0.4.8"
+
+tokio = { version = "0.2", features = ["macros"] }
+
+lapin = "1.0"
+tokio-amqp = "0.1"
+async-trait = "0.1.31"

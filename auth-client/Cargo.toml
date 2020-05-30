@@ -1,0 +1,17 @@
+[package]
+name = "auth-client"
+version = "0.1.0"
+authors = ["BigRedEye <mail@bigredeye.me>"]
+edition = "2018"
+
+[dependencies]
+errors = { path = "../errors" }
+pb = { path = "../pb" }
+
+tonic = "0.2"
+prost = "0.6"
+tokio = { version = "0.2", features = ["macros"] }
+log = "0.4.8"
+
+[build-dependencies]
+tonic-build = "0.2"

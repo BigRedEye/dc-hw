@@ -1,0 +1,94 @@
+syntax = "proto2";
+
+package online_store;
+
+import "google/api/annotations.proto";
+
+option go_package = "github.com/BigRedEye/dc-hw/api/proto";
+
+service Shop {
+    rpc AddProduct(AddProductRequest) returns (AddProductResponse) {
+        option (google.api.http) = {
+            post: "/v1/products"
+            body: "*"
+        };
+    }
+
+    rpc UpdateProduct(UpdateProductRequest) returns (UpdateProductResponse) {
+        option (google.api.http) = {
+            put: "/v1/products/{product.id}"
+            body: "*"
+        };
+    }
+
+    rpc GetProduct(GetProductRequest) returns (GetProductResponse) {
+        option (google.api.http) = {
+            get: "/v1/products/{id}"
+        };
+    }
+
+    rpc DeleteProduct(DeleteProductRequest) returns (DeleteProductResponse) {
+        option (google.api.http) = {
+            delete: "/v1/products/{id}"
+        };
+    }
+
+    rpc ListProducts(ListProductsRequest) returns (ListProductsResponse) {
+        option (google.api.http) = {
+            get: "/v1/products"
+        };
+    }
+}
+
+message Product {
+    // Output only
+    optional int32 id = 1;
+    required string name = 2;
+    required string code = 3;
+    required string category = 4;
+}
+
+message AddProductRequest {
+    required Product product = 1;
+}
+
+message AddProductResponse {
+    required Product product = 1;
+}
+
+message UpdateProductRequest {
+    required Product product = 1;
+}
+
+message UpdateProductResponse {
+    required Product product = 1;
+}
+
+message GetProductRequest {
+    required int32 id = 1;
+}
+
+message GetProductResponse {
+    required Product product = 1;
+}
+
+message DeleteProductRequest {
+    required int32 id = 1;
+}
+
+message DeleteProductResponse {
+}
+
+message ListProductsRequest {
+    optional int64 offset = 1;
+    optional int64 limit = 2;
+}
+
+message ListProductsResponse {
+    required int64 count = 1;
+    repeated Product products = 2;
+}
+
+message ProductsBatch {
+    repeated Product products = 1;
+}

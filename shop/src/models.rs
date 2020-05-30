@@ -23,13 +23,3 @@ pub struct ListQuery {
     pub limit: Option<i64>,
     pub offset: Option<i64>,
 }
-
-#[derive(Serialize)]
-pub struct ApiError {
-    pub error: String,
-}
-
-#[derive(Serialize)]
-pub struct ApiSuccess {
-    pub status: String,
-}

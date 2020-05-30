@@ -1,18 +1,126 @@
 version: "3"
 services:
-  app:
-    build: .
+  rabbit:
+    image: rabbitmq:3
     ports:
-      - "8080:8080"
+      - 5672:5672
+    volumes:
+      - "data-rabbit:/var/lib/rabbitmq"
+    restart: unless-stopped
+
+  shop:
+    build:
+      context: ./
+      dockerfile: ./Dockerfile
+      args:
+        CRATE: "shop"
+    ports:
+      - "19091:19091"
     links:
-      - db
+      - db_shop
+      - auth
+      - rabbit
     restart: always
     environment:
-      BIND_ADDRESS: "0.0.0.0:8080"
-      DATABASE_URL: "postgres://postgres:example@db/postgres"
-      RUST_LOG: "debug"
-  db:
+      SHOP_DATABASE_URL: "postgres://shop:password@db_shop/postgres"
+      SHOP_BIND_ADDRESS: "0.0.0.0:19091"
+      SHOP_AUTH_ADDRESS: "auth:19092"
+      SHOP_AMQP_ADDRESS: "amqp://rabbit:5672"
+      SHOP_AMQP_QUEUE: "products_import"
+      RUST_LOG: "info"
+    depends_on:
+      - db_shop
+      - rabbit
+
+  db_shop:
     image: postgres
     restart: always
     environment:
-      POSTGRES_PASSWORD: example
+      POSTGRES_PASSWORD: password
+      POSTGRES_USER: shop
+
+  auth:
+    build:
+      context: ./
+      dockerfile: ./Dockerfile
+      args:
+        CRATE: "auth"
+    ports:
+      - "19092:19092"
+    links:
+      - db_auth
+      - rabbit
+    restart: always
+    environment:
+      AUTH_DATABASE_URL: "postgres://auth:password@db_auth/postgres"
+      AUTH_BIND_ADDRESS: "0.0.0.0:19092"
+      AUTH_AMQP_ADDRESS: "amqp://rabbit:5672"
+      AUTH_SESSION_TIMEOUT: "60"
+      RUST_LOG: "info"
+    depends_on:
+      - db_auth
+      - rabbit
+
+  db_auth:
+    image: postgres
+    restart: always
+    environment:
+      POSTGRES_PASSWORD: password
+      POSTGRES_USER: auth
+
+  email:
+    build:
+      context: ./
+      dockerfile: ./Dockerfile
+      args:
+        CRATE: "confirmations-email"
+    links:
+      - rabbit
+    restart: always
+    environment:
+      EMAIL_AMQP_ADDRESS: "amqp://rabbit:5672"
+      EMAIL_AMQP_QUEUE: "confirmations_email"
+      EMAIL_SMTP_SERVER: "smtp-relay.gmail.com"
+      RUST_LOG: "info"
+    depends_on:
+      - rabbit
+
+  import:
+    build:
+      context: ./
+      dockerfile: ./Dockerfile
+      args:
+        CRATE: "products-import"
+    ports:
+      - "19093:19093"
+    links:
+      - rabbit
+    restart: always
+    environment:
+      IMPORT_AMQP_ADDRESS: "amqp://rabbit:5672"
+      IMPORT_AMQP_QUEUE: "products_import"
+      IMPORT_BIND_ADDRESS: "0.0.0.0:19093"
+      IMPORT_BATCH_SIZE: "128"
+      RUST_LOG: "info"
+    depends_on:
+      - rabbit
+
+  gateway:
+    build:
+      context: ./
+      dockerfile: ./Dockerfile.gateway
+    links:
+      - shop
+      - auth
+    ports:
+      - "19090:19090"
+    restart: always
+    environment:
+      GW_BIND_ADDRESS: "0.0.0.0:19090"
+      GW_SHOP_ADDRESS: "shop:19091"
+      GW_AUTH_ADDRESS: "auth:19092"
+
+volumes:
+  data-app:
+  data-auth:
+  data-rabbit:
