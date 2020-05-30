@@ -1,0 +1,13 @@
+[workspace]
+
+members = [
+    "amqp-consumer",
+    "auth",
+    "auth-client",
+    "confirmations-email",
+    "confirmations-sms",
+    "errors",
+    "pb",
+    "products-import",
+    "shop",
+]

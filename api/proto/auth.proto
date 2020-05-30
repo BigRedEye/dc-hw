@@ -1,0 +1,128 @@
+syntax = "proto2";
+
+package online_store;
+
+import "google/api/annotations.proto";
+
+option go_package = "github.com/BigRedEye/dc-hw/api/proto";
+
+service Auth {
+    rpc Register(RegisterRequest) returns (RegisterResponse) {
+        option (google.api.http) = {
+            post: "/v1/register"
+            body: "*"
+        };
+    }
+
+    rpc Login(LoginRequest) returns (LoginResponse) {
+        option (google.api.http) = {
+            post: "/v1/login"
+            body: "*"
+        };
+    }
+
+    rpc Confirm(ConfirmRequest) returns (ConfirmResponse) {
+        option (google.api.http) = {
+            get: "/v1/confirm"
+        };
+    }
+
+    rpc Refresh(RefreshRequest) returns (RefreshResponse) {
+        option (google.api.http) = {
+            post: "/v1/refresh"
+            body: "*"
+        };
+    }
+
+    rpc UpdateUser(UpdateUserRequest) returns (UpdateUserResponse) {
+        option (google.api.http) = {
+            post: "/v1/users/{id}"
+            body: "*"
+        };
+    }
+
+    rpc ListUsers(ListUsersRequest) returns (ListUsersResponse) {
+        option (google.api.http) = {
+            get: "/v1/users"
+        };
+    }
+
+    rpc ValidateToken(ValidateTokenRequest) returns (ValidateTokenResponse) {
+    }
+}
+
+message Tokens {
+    required string refresh = 1;
+    required string access = 2;
+}
+
+enum Role {
+    User = 0;
+    Admin = 1;
+}
+
+message RegisterRequest {
+    required string password = 1;
+    optional string email = 2;
+    optional string phone = 3;
+}
+
+message RegisterResponse {
+}
+
+message LoginRequest {
+    required string login = 1;
+    required string password = 2;
+}
+
+message LoginResponse {
+    required Tokens tokens = 1;
+}
+
+message ConfirmRequest {
+    required string token = 1;
+}
+
+message ConfirmResponse {
+}
+
+message RefreshRequest {
+    required string token = 1;
+}
+
+message RefreshResponse {
+    required Tokens tokens = 1;
+}
+
+message ListUsersRequest {
+    optional int64 offset = 1;
+    optional int64 limit = 2;
+}
+
+message ListUsersResponse {
+    repeated UserInfo users =1;
+}
+
+message UserInfo {
+    required int32 id = 1;
+    required Role role = 2;
+    optional string email = 3;
+    optional string phone = 4;
+}
+
+message UpdateUserRequest {
+    required string id = 1;
+    required Role role = 2;
+}
+
+message UpdateUserResponse {
+}
+
+message ValidateTokenRequest {
+    required string token = 1;
+}
+
+message ValidateTokenResponse {
+    required bool valid = 1;
+    required Role role = 2;
+}
